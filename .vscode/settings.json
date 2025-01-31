@@ -1,6 +1,7 @@
 {
     "files.associations": {
-        "parser.h": "c"
+        "parser.h": "c",
+        "arraylist.h": "c"
     },
     "C_Cpp.errorSquiggles": "enabled"
 }

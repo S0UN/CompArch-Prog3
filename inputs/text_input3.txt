@@ -1,0 +1,19 @@
+{
+    Type = INPUT
+    UniqueID = 1
+}
+{
+    Type = INPUT
+    UniqueID = 2
+}
+{
+    Type = XOR
+    UniqueID = 3
+    Input = 1,2
+    Output = 4
+}
+{
+    Type = OUTPUT
+    UniqueID = 4
+    Input = 3
+}

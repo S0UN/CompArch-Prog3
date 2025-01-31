@@ -16,4 +16,4 @@ void addToArrayList(ArrayList *list, void *element);
 void *getFromArrayList(ArrayList *list, int index);
 void freeArrayList(ArrayList *list);
 
-#endif // ARRAYLIST_H
+#endif 

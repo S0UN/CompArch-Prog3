@@ -2,21 +2,21 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h> 
-ArrayList createArrayList(int initialCapacity, size_t elementSize)
-{
+ArrayList createArrayList(int initialCapacity, size_t elementSize) {
     ArrayList list;
     list.size = 0;
     list.capacity = initialCapacity;
     list.elementSize = elementSize;
 
-    list.data = malloc(sizeof(elementSize) * initialCapacity);
-    if (!list.data)
-    {
+    list.data = malloc(elementSize * initialCapacity);
+    if (!list.data) {
         fprintf(stderr, "Error: Memory allocation failed for ArrayList\n");
         exit(1);
     }
+
     return list;
 }
+
 
 void addToArrayList(ArrayList *list, void *element)
 {
@@ -31,7 +31,6 @@ void addToArrayList(ArrayList *list, void *element)
         }
         list->data = newData;
     }
-    // Copy the element into the array
     memcpy((char *)list->data + (list->size * list->elementSize), element, list->elementSize);
     list->size++;
 }
