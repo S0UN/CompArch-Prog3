@@ -52,7 +52,6 @@ int evaluateDevice(Device *device, int *inputs, ArrayList *devices) {
         for (int i = 0; i < device->connections.size; i++) {
             Device *inputDevice = *(Device **)getFromArrayList(&device->connections, i);
             result &= evaluate(inputDevice, inputs, devices);
-            if (result == 0) break;
         }
         return result;
     } else if (strcmp(device->type, "OR") == 0) {
@@ -60,7 +59,6 @@ int evaluateDevice(Device *device, int *inputs, ArrayList *devices) {
         for (int i = 0; i < device->connections.size; i++) {
             Device *inputDevice = *(Device **)getFromArrayList(&device->connections, i);
             result |= evaluate(inputDevice, inputs, devices);
-            if (result == 1) break;
         }
         return result;
     } else if (strcmp(device->type, "XOR") == 0) {
