@@ -1,30 +1,12 @@
 #!/bin/bash
 
-# Set the directories
-SRC_DIR="src"
-INCLUDE_DIR="include"
-BIN_DIR="bin"
+FILENAME="hw3"
 
-# Create the bin directory if it doesn't exist
-mkdir -p $BIN_DIR
+# Compile the source files
+gcc -o $FILENAME -Iinclude src/arraylist.c src/circuit.c src/parser.c src/main.c
 
-# Compiler and flags
-CC=gcc
-CFLAGS="-Wall -Wextra -I$INCLUDE_DIR"
+# Move the compiled executable to the script's directory
+mv $FILENAME "$(dirname "$0")"
 
-# Source files
-SRC_FILES=("$SRC_DIR/arraylist.c" "$SRC_DIR/circuit.c" "$SRC_DIR/parser.c" "$SRC_DIR/main.c")
-
-# Output executable
-OUTPUT="$BIN_DIR/program"
-
-# Compile the program
-echo "Compiling the project..."
-$CC $CFLAGS ${SRC_FILES[@]} -o $OUTPUT
-
-if [ $? -eq 0 ]; then
-    echo "Compilation successful. Executable created at $OUTPUT"
-else
-    echo "Compilation failed."
-    exit 1
-fi
+# Make the executable runnable
+chmod +x $FILENAME
