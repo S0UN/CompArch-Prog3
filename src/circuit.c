@@ -192,13 +192,13 @@ void computeTruthTable(ArrayList *devices, int numInputs) {
 
     // Generate and print truth table rows
     for (int i = 0; i < numCombinations; i++) {
-        memset(cache, -1, sizeof(int) * MAX_DEVICES);  // Reset cache for each combination
+        memset(cache, -1, sizeof(int) * MAX_DEVICES);  
 
         // Generate input values
         int inputs[MAX_DEVICES];
         for (int j = 0; j < inputDevices.size; j++) {
             int *inputID = (int *)getFromArrayList(&inputDevices, j);
-            inputs[*inputID] = (i >> j) & 1;  // Populate inputs for INPUT devices
+            inputs[*inputID] = (i >> j) & 1;  
         }
 
         // Print the row
