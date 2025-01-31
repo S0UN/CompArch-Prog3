@@ -50,10 +50,18 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
+    // Create deviceMap
+    int deviceMap[MAX_DEVICES];
+    memset(deviceMap, -1, sizeof(deviceMap));
+    for (int i = 0; i < devices.size; i++) {
+        Device *device = (Device *)getFromArrayList(&devices, i);
+        deviceMap[device->uniqueID] = i;
+    }
 
+    // Build the graph
+    makeGraph(&devices, deviceMap);
 
-    makeGraph(&devices);
-
+    // Compute and print the truth table
     computeTruthTable(&devices, numInputs);
 
     // Free memory for individual devices

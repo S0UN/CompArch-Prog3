@@ -19,7 +19,7 @@ int parseInput(const char *filename, ArrayList *devices, int *numInputs) {
     char line[256];
     *numInputs = 0;
     Device device;
-    int inStanza = 0; 
+    int inStanza = 0;
 
     while (fgets(line, sizeof(line), file)) {
         if (strstr(line, "{")) {
@@ -96,5 +96,22 @@ void extractInputs(const char *value, ArrayList *list) {
             addToArrayList(list, &num);
         }
         token = strtok(NULL, ",");
+    }
+}
+
+void printDeviceList(ArrayList *devices) {
+    for (int i = 0; i < devices->size; i++) {
+        Device *device = (Device *)getFromArrayList(devices, i);
+        printf("Device %d: Type=%s, Inputs=", device->uniqueID, device->type);
+        for (int j = 0; j < device->inputs.size; j++) {
+            int *inputID = (int *)getFromArrayList(&device->inputs, j);
+            printf("%d ", *inputID);
+        }
+        printf(", Outputs=");
+        for (int j = 0; j < device->outputs.size; j++) {
+            int *outputID = (int *)getFromArrayList(&device->outputs, j);
+            printf("%d ", *outputID);
+        }
+        printf("\n");
     }
 }

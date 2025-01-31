@@ -17,6 +17,6 @@ int parseInput(const char *filename, ArrayList *devices, int *numInputs);
 void extractInputs(const char *value, ArrayList *list); 
 void extractKey(const char *line, char *key);
 void extractKeyValue(const char *line, char *key, char *value); 
-
+void printDeviceList(ArrayList *devices);
 
 #endif 
