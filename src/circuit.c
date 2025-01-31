@@ -4,35 +4,82 @@
 #include <string.h>  
 #include "circuit.h"
 
-void makeGraph(ArrayList *devices) {
-    for (int i = 0; i < devices->size; i++) {
-        Device *device = (Device *)getFromArrayList(devices, i);
-        if (!device) continue;
+// Helper function to build connections for a single device
+void buildDeviceConnections(Device *device, ArrayList *devices) {
+    freeArrayList(&device->connections);
+    device->connections = createArrayList(2, sizeof(Device *));
 
-        // Clear existing connections
-        freeArrayList(&device->connections);
-        device->connections = createArrayList(2, sizeof(Device *));
+    for (int j = 0; j < device->inputs.size; j++) {
+        int *inputID = (int *)getFromArrayList(&device->inputs, j);
+        if (!inputID) continue;
 
-        // Find devices that are inputs to this device
-        for (int j = 0; j < device->inputs.size; j++) {
-            int *inputID = (int *)getFromArrayList(&device->inputs, j);
-            if (!inputID) continue;
+        for (int k = 0; k < devices->size; k++) {
+            Device *potentialInputDevice = (Device *)getFromArrayList(devices, k);
+            if (!potentialInputDevice) continue;
 
-            // Find the device with the matching uniqueID
-            for (int k = 0; k < devices->size; k++) {
-                Device *potentialInputDevice = (Device *)getFromArrayList(devices, k);
-                if (!potentialInputDevice) continue;
-
-                if (potentialInputDevice->uniqueID == *inputID) {
-                    addToArrayList(&device->connections, &potentialInputDevice);
-                    break;
-                }
+            if (potentialInputDevice->uniqueID == *inputID) {
+                addToArrayList(&device->connections, &potentialInputDevice);
+                break;
             }
         }
     }
 }
 
+void makeGraph(ArrayList *devices) {
+    for (int i = 0; i < devices->size; i++) {
+        Device *device = (Device *)getFromArrayList(devices, i);
+        if (!device) continue;
+
+        buildDeviceConnections(device, devices);
+    }
+}
+
 int *cache;
+
+// Helper function to evaluate a device based on its type
+int evaluateDevice(Device *device, int *inputs, ArrayList *devices) {
+    if (strcmp(device->type, "INPUT") == 0) {
+        return inputs[device->uniqueID];
+    } else if (strcmp(device->type, "NOT") == 0) {
+        if (device->connections.size != 1) {
+            fprintf(stderr, "ERROR: NOT gate must have exactly one input.\n");
+            exit(1);
+        }
+        Device *inputDevice = *(Device **)getFromArrayList(&device->connections, 0);
+        return !evaluate(inputDevice, inputs, devices);
+    } else if (strcmp(device->type, "AND") == 0) {
+        int result = 1;
+        for (int i = 0; i < device->connections.size; i++) {
+            Device *inputDevice = *(Device **)getFromArrayList(&device->connections, i);
+            result &= evaluate(inputDevice, inputs, devices);
+        }
+        return result;
+    } else if (strcmp(device->type, "OR") == 0) {
+        int result = 0;
+        for (int i = 0; i < device->connections.size; i++) {
+            Device *inputDevice = *(Device **)getFromArrayList(&device->connections, i);
+            result |= evaluate(inputDevice, inputs, devices);
+        }
+        return result;
+    } else if (strcmp(device->type, "XOR") == 0) {
+        int result = 0;
+        for (int i = 0; i < device->connections.size; i++) {
+            Device *inputDevice = *(Device **)getFromArrayList(&device->connections, i);
+            result ^= evaluate(inputDevice, inputs, devices);
+        }
+        return result;
+    } else if (strcmp(device->type, "OUTPUT") == 0) {
+        if (device->connections.size != 1) {
+            fprintf(stderr, "ERROR: OUTPUT device must have exactly one input.\n");
+            exit(1);
+        }
+        Device *inputDevice = *(Device **)getFromArrayList(&device->connections, 0);
+        return evaluate(inputDevice, inputs, devices);
+    } else {
+        fprintf(stderr, "ERROR: Unknown device type: %s\n", device->type);
+        exit(1);
+    }
+}
 
 int evaluate(Device *device, int *inputs, ArrayList *devices) {
     if (!device) {
@@ -45,54 +92,7 @@ int evaluate(Device *device, int *inputs, ArrayList *devices) {
         return cache[device->uniqueID];
     }
 
-    int result = 0;
-
-    if (strcmp(device->type, "INPUT") == 0) {
-        // INPUT devices get their value directly from the inputs array
-        result = inputs[device->uniqueID];
-    } else if (strcmp(device->type, "NOT") == 0) {
-        // NOT gate has exactly one input
-        if (device->connections.size != 1) {
-            fprintf(stderr, "ERROR: NOT gate must have exactly one input.\n");
-            exit(1);
-        }
-        Device *inputDevice = *(Device **)getFromArrayList(&device->connections, 0);
-        result = !evaluate(inputDevice, inputs, devices);
-    } else if (strcmp(device->type, "AND") == 0) {
-        // AND gate: result is 1 only if all inputs are 1
-        result = 1;  // Start with 1 (AND identity)
-        for (int i = 0; i < device->connections.size; i++) {
-            Device *inputDevice = *(Device **)getFromArrayList(&device->connections, i);
-            result &= evaluate(inputDevice, inputs, devices);
-            if (result == 0) break;  // Early exit if any input is 0
-        }
-    } else if (strcmp(device->type, "OR") == 0) {
-        // OR gate: result is 1 if at least one input is 1
-        result = 0;  // Start with 0 (OR identity)
-        for (int i = 0; i < device->connections.size; i++) {
-            Device *inputDevice = *(Device **)getFromArrayList(&device->connections, i);
-            result |= evaluate(inputDevice, inputs, devices);
-            if (result == 1) break;  // Early exit if any input is 1
-        }
-    } else if (strcmp(device->type, "XOR") == 0) {
-        // XOR gate: result is 1 if an odd number of inputs are 1
-        result = 0;  // Start with 0 (XOR identity)
-        for (int i = 0; i < device->connections.size; i++) {
-            Device *inputDevice = *(Device **)getFromArrayList(&device->connections, i);
-            result ^= evaluate(inputDevice, inputs, devices);
-        }
-    } else if (strcmp(device->type, "OUTPUT") == 0) {
-        // OUTPUT devices simply pass through the value of their input
-        if (device->connections.size != 1) {
-            fprintf(stderr, "ERROR: OUTPUT device must have exactly one input.\n");
-            exit(1);
-        }
-        Device *inputDevice = *(Device **)getFromArrayList(&device->connections, 0);
-        result = evaluate(inputDevice, inputs, devices);
-    } else {
-        fprintf(stderr, "ERROR: Unknown device type: %s\n", device->type);
-        exit(1);
-    }
+    int result = evaluateDevice(device, inputs, devices);
 
     // Cache the result
     cache[device->uniqueID] = result;
@@ -103,6 +103,50 @@ int compareInt(const void *a, const void *b) {
     return (*(int *)a - *(int *)b);
 }
 
+// Helper function to collect and sort device IDs by type
+void collectAndSortDeviceIDs(ArrayList *devices, const char *type, ArrayList *result) {
+    for (int i = 0; i < devices->size; i++) {
+        Device *device = (Device *)getFromArrayList(devices, i);
+        if (strcmp(device->type, type) == 0) {
+            addToArrayList(result, &device->uniqueID);
+        }
+    }
+    qsort(result->data, result->size, sizeof(int), compareInt);
+}
+
+// Helper function to print the truth table header
+void printTruthTableHeader(ArrayList *inputDevices, ArrayList *outputDevices) {
+    for (int j = 0; j < inputDevices->size; j++) {
+        int *inputID = (int *)getFromArrayList(inputDevices, j);
+        printf("%d ", *inputID);
+    }
+    printf("| ");
+    for (int j = 0; j < outputDevices->size; j++) {
+        int *outputID = (int *)getFromArrayList(outputDevices, j);
+        printf("%d ", *outputID);
+    }
+    printf("\n");
+}
+
+// Helper function to print a row of the truth table
+void printTruthTableRow(ArrayList *inputDevices, ArrayList *outputDevices, int *inputs, ArrayList *devices) {
+    for (int j = 0; j < inputDevices->size; j++) {
+        int *inputID = (int *)getFromArrayList(inputDevices, j);
+        printf("%d ", inputs[*inputID]);
+    }
+    printf("| ");
+    for (int j = 0; j < outputDevices->size; j++) {
+        int *outputID = (int *)getFromArrayList(outputDevices, j);
+        Device *outputDevice = (Device *)getFromArrayList(devices, *outputID);
+        if (!outputDevice) {
+            fprintf(stderr, "ERROR: Output device ID %d not found.\n", *outputID);
+            exit(1);
+        }
+        int outputValue = evaluate(outputDevice, inputs, devices);
+        printf("%d ", outputValue);
+    }
+    printf("\n");
+}
 void computeTruthTable(ArrayList *devices, int numInputs) {
     int numCombinations = 1 << numInputs;
     cache = malloc(sizeof(int) * devices->size);
@@ -112,65 +156,29 @@ void computeTruthTable(ArrayList *devices, int numInputs) {
         exit(1);
     }
 
-    // Identify and sort input and output devices
+    // Collect and sort input and output device IDs
     ArrayList inputDevices = createArrayList(numInputs, sizeof(int));
     ArrayList outputDevices = createArrayList(devices->size, sizeof(int));
 
-    for (int i = 0; i < devices->size; i++) {
-        Device *device = (Device *)getFromArrayList(devices, i);
-        if (strcmp(device->type, "INPUT") == 0) {
-            addToArrayList(&inputDevices, &device->uniqueID);
-        } else if (strcmp(device->type, "OUTPUT") == 0) {
-            addToArrayList(&outputDevices, &device->uniqueID);
-        }
-    }
+    collectAndSortDeviceIDs(devices, "INPUT", &inputDevices);
+    collectAndSortDeviceIDs(devices, "OUTPUT", &outputDevices);
 
-    qsort(inputDevices.data, inputDevices.size, sizeof(int), compareInt);
-    qsort(outputDevices.data, outputDevices.size, sizeof(int), compareInt);
+    // Print the truth table header
+    printTruthTableHeader(&inputDevices, &outputDevices);
 
-    // Print header row
-    for (int j = 0; j < inputDevices.size; j++) {
-        int *inputID = (int *)getFromArrayList(&inputDevices, j);
-        printf("%d ", *inputID);
-    }
-    printf("| ");
-    for (int j = 0; j < outputDevices.size; j++) {
-        int *outputID = (int *)getFromArrayList(&outputDevices, j);
-        printf("%d ", *outputID);
-    }
-    printf("\n");
-
+    // Generate and print truth table rows
     for (int i = 0; i < numCombinations; i++) {
         memset(cache, -1, sizeof(int) * devices->size);
 
         // Generate input values
-        int inputs[devices->size];  // Use devices->size to handle arbitrary input IDs
+        int inputs[devices->size];
         for (int j = 0; j < inputDevices.size; j++) {
             int *inputID = (int *)getFromArrayList(&inputDevices, j);
-            inputs[*inputID] = (i >> j) & 1;  // Extract j-th bit
+            inputs[*inputID] = (i >> j) & 1;
         }
 
-        // Print sorted input values
-        for (int j = 0; j < inputDevices.size; j++) {
-            int *inputID = (int *)getFromArrayList(&inputDevices, j);
-            printf("%d ", inputs[*inputID]);
-        }
-
-        printf("| ");
-
-        // Print sorted output values
-        for (int j = 0; j < outputDevices.size; j++) {
-            int *outputID = (int *)getFromArrayList(&outputDevices, j);
-            Device *outputDevice = (Device *)getFromArrayList(devices, *outputID);
-            if (!outputDevice) {
-                fprintf(stderr, "ERROR: Output device ID %d not found.\n", *outputID);
-                exit(1);
-            }
-            int outputValue = evaluate(outputDevice, inputs, devices);
-            printf("%d ", outputValue);
-        }
-
-        printf("\n");
+        // Print the row
+        printTruthTableRow(&inputDevices, &outputDevices, inputs, devices);
     }
 
     free(cache);
