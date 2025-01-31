@@ -1,0 +1,18 @@
+{
+    Type=INPUT
+    UniqueID=2
+    Input=
+    Output=1,
+}
+{
+    Type=INPUT
+    UniqueID=3
+    Input=
+    Output=1,
+}
+{
+    Type=OR
+    UniqueID=1
+    Input=2,3,
+    Output=
+}
