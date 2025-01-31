@@ -3,8 +3,7 @@
 
 #include "arraylist.h" 
 #include "parser.h"     
-#define MAX_DEVICES 300
-
+#define MAX_DEVICES 10000  
 void makeGraph(ArrayList *devices, int *deviceMap);
  void computeTruthTable(ArrayList *devices, int numInputs);
 int evaluate(Device *device, int *inputs, ArrayList *devices);
